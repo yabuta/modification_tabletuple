@@ -1,0 +1,130 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <cuda.h>
+#include <sys/time.h>
+#include "GPUTUPLE.h"
+#include "GPUetc/common/GNValue.h"
+#include "GPUetc/expressions/Gcomparisonexpression.h"
+
+using namespace voltdb;
+
+extern "C" {
+
+
+  /**
+     called function is changed by join condition.
+     
+     if T1.val = T2.val, iocount and iojoin is called.
+     if T.val1 = T.val2 , iicount and iijoin is called.
+   */
+
+
+__global__ void iijoin(
+          RESULT *p,
+          int ltn,
+          int rtn,
+          int ll,
+          int rr
+          ) 
+{
+
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  int k = blockIdx.y * gridDim.x * blockDim.x;
+
+  if(i<ltn){
+    /*
+    __shared__ GNValue tignv1[BLOCK_SIZE_Y];
+    for(uint j=0;threadIdx.x+j*blockDim.x<BLOCK_SIZE_Y&&(threadIdx.x+j*blockDim.x+BLOCK_SIZE_Y*blockIdx.y)<rtn;j++){
+      tignv1[threadIdx.x + j*blockDim.x] = ignv1[threadIdx.x + j*blockDim.x + BLOCK_SIZE_Y * blockIdx.y];
+    }
+    __shared__ GNValue tignv2[BLOCK_SIZE_Y];
+    for(uint j=0;threadIdx.x+j*blockDim.x<BLOCK_SIZE_Y&&(threadIdx.x+j*blockDim.x+BLOCK_SIZE_Y*blockIdx.y)<rtn;j++){
+      tignv2[threadIdx.x + j*blockDim.x] = ignv2[threadIdx.x + j*blockDim.x + BLOCK_SIZE_Y * blockIdx.y];
+    }    
+    __syncthreads();  
+    */
+    int rtn_g = rtn;
+    int writeloc = i+k*BLOCK_SIZE_Y;
+    for(uint j = 0; j<BLOCK_SIZE_Y &&((j+BLOCK_SIZE_Y*blockIdx.y)<rtn_g);j++){
+      p[writeloc].lkey = i+ll;
+      p[writeloc].rkey = blockIdx.y*BLOCK_SIZE_Y+j+rr;
+      writeloc+=k;    
+    }
+  }     
+}    
+
+
+__global__
+void oicount(
+          GNValue *ognv,
+          GNValue *ignv,
+          GComparisonExpression ex,
+          int *count,
+          int ltn,
+          int rtn
+          ) 
+
+{
+
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  int k = blockIdx.y * gridDim.x * blockDim.x;
+
+  if(i<ltn){
+    __shared__ GNValue tignv[BLOCK_SIZE_Y];
+    for(uint j=0;threadIdx.x+j*blockDim.x<BLOCK_SIZE_Y&&(threadIdx.x+j*blockDim.x+BLOCK_SIZE_Y*blockIdx.y)<rtn;j++){
+      tignv[threadIdx.x + j*blockDim.x] = ignv[threadIdx.x + j*blockDim.x + BLOCK_SIZE_Y * blockIdx.y];
+    }
+    __syncthreads();
+
+    GNValue tognv=ognv[i];
+    int rtn_g = rtn;
+    int mcount = 0;
+    for(uint j = 0; j<BLOCK_SIZE_Y &&((j+BLOCK_SIZE_Y*blockIdx.y)<rtn_g);j++){      
+      if(ex.eval(tognv,tignv[j])) {
+        mcount++;
+      }     
+    }
+
+    count[i+k] = mcount;
+
+  }
+
+}
+
+
+__global__ void oijoin(
+          GNValue *ognv,
+          GNValue *ignv,
+          RESULT *p,
+          GComparisonExpression ex,
+          int *count,
+          int ltn,
+          int rtn,
+          int ll,
+          int rr
+          ) 
+{
+
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  int k = blockIdx.y * gridDim.x * blockDim.x;
+
+  if(i<ltn){
+    __shared__ GNValue tignv[BLOCK_SIZE_Y];
+    for(uint j=0;threadIdx.x+j*blockDim.x<BLOCK_SIZE_Y&&(threadIdx.x+j*blockDim.x+BLOCK_SIZE_Y*blockIdx.y)<rtn;j++){
+      tignv[threadIdx.x + j*blockDim.x] = ignv[threadIdx.x + j*blockDim.x + BLOCK_SIZE_Y * blockIdx.y];
+    }
+    __syncthreads();
+    GNValue tognv = ognv[i];
+    int rtn_g = rtn;
+    int writeloc = count[i+k];
+    for(uint j = 0; j<BLOCK_SIZE_Y &&((j+BLOCK_SIZE_Y*blockIdx.y)<rtn_g);j++){
+      if(ex.eval(tognv,tignv[j])){
+        p[writeloc].lkey = i+ll;
+        p[writeloc].rkey = blockIdx.y*BLOCK_SIZE_Y+j+rr;
+        writeloc++;
+      }
+    }
+  }     
+}
+
+}

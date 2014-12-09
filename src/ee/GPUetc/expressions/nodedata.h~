@@ -1,0 +1,16 @@
+
+#ifndef NODEDATA_H
+#define NODEDATA_H
+
+namespace voltdb{
+
+typedef struct _EXPRESSIONNODE{
+    ExpressionType et;
+    int startPos;
+    int endPos;
+    
+}EXPRESSIONNODE;
+
+}
+
+#endif

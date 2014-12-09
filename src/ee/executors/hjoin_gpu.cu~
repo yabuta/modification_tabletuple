@@ -1,0 +1,89 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <cuda.h>
+#include <sys/time.h>
+#include "GPUTUPLE.h"
+#include "GPUetc/common/GNValue.h"
+#include "GPUetc/expression/GComparisonexpression.h"
+
+
+extern "C" {
+
+__global__
+void count(
+          COLUMNDATA *lt,
+          uint *count,
+          COLUMNDATA *prt,
+          int *r_p,
+          int p_num,
+          int left
+          ) 
+{
+
+  int x = blockIdx.x * blockDim.x + threadIdx.x;  
+  if(x < left){
+
+
+    int val = lt[x].val;
+    uint temp = 0;
+    int temp2 = r_p[val%p_num+1];
+    //count[x] = 0;
+
+    for(int k=r_p[val%p_num] ; k<temp2 ; k++){
+      if(prt[k].val == val){
+        temp++;
+      }
+    }
+    count[x] = temp;
+
+  }
+
+
+  if(x == left-1){
+    count[x+1] = 0;
+  }
+
+}
+
+
+__global__ 
+void join(
+          COLUMNDATA *prt,
+          COLUMNDATA *lt,
+          RESULT *jt,
+          int *r_p,
+          uint *count,
+          int p_num,
+          int left
+          ) 
+{
+
+
+  int x = blockIdx.x * blockDim.x + threadIdx.x;
+
+
+  uint writeloc = count[x];
+
+  if(x < left){
+
+    int val = lt[x].val;
+
+    int temp=0;
+    int temp2 = r_p[val%p_num+1];
+
+    for(int k=r_p[val%p_num] ; k<temp2 ; k ++){
+      if(prt[k].val == val){
+          jt[writeloc + temp].lkey = lt[x].key;
+          jt[writeloc + temp].lval = val;
+          jt[writeloc + temp].rkey = prt[k].key;
+          jt[writeloc + temp].rval = prt[k].val;
+          
+          temp++;
+      }
+    }
+
+  }
+
+}    
+
+}

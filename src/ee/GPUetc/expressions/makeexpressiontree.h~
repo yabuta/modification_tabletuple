@@ -1,0 +1,184 @@
+
+#ifndef MAKEEXPRESSIONTREE_H
+#define MAKEEXPRESSIONTREE_H
+
+namespace voltdb{
+
+
+/**
+This class make a tree including expression information for GPGPU.
+Each node has ExpressionType, startPos and etc.
+The reason is that expression data is integrated in one array because we must send necessary data to GPU.
+So I make one array including Expressions. 
+The startPos of the structure of this class is the start position of an Expression in the array of GPU.
+
+I assume this class used to seach an Expression in the GPU array.
+
+*/
+
+class makeExpressionTree{
+
+public:
+
+  makeExpressionTree();
+
+  typedef struct _EXPRESSIONNODE{
+    ExpressionType et;
+    int startPos;
+    int endPos;
+   
+  }EXPRESSIONNODE;
+
+  /*
+    reclusive function. first is maketree(ab,0,1)
+   */
+  void maketree(AbstractExpression *ab,int pos,int dep){
+
+    if(ab == NULL){
+      enode[pos].et = EXPRESSION_TYPE_INVALID;
+      enode[pos].startPos = enode[pos-1];
+      enode[pos].endPos = enode[pos-1];
+    }
+    
+    enode[pos].et = ab->getExpressionType();
+    if(enode[pos].et != EXPRESSION_TYPE_VALUE_TUPLE){
+
+      if(pos != 0){
+        enode[pos].startPos = enode[pos-1].startPos + expressionSize(enode[pos-1].et); 
+        enode[pos].endPos = enode[pos].startPos + expressionSize(enode[pos].et);
+      }else{
+        enode[pos].startPos = 0;
+        enode[pos].endPos = expressionSize(enode[pos].et);
+      }
+
+    }
+
+    //bother to include math.h
+    int nextdep = 1;
+    for(int i=0 ; i<dep; i++){
+      nextdep *= 2;
+    }
+
+    int nextpos = (nextdep-1) + (pos+1-nextdep/2)*2 + 1;
+
+    if(enode[pos].et == EXPRESSION_TYPE_VALUE_TYPE || ab == NULL){
+      this.maketree(NULL,nextpos,dep+1);
+      this.maketree(NULL,nextpos+1,dep+1);
+    }else{
+      this.maketree(ab->getLeft(),nextpos,dep+1);
+      this.maketree(ab->getRight(),nextpos+1,dep+1);
+
+    }
+      
+  }
+
+  void allocate(AbstractExpression *ab, char *data,int pos, int dep){
+
+
+      switch(enode[pos].et){
+      case EXPRESSION_TYPE_OPERATOR_PLUS:
+      case EXPRESSION_TYPE_OPERATOR_MINUS:
+      case EXPRESSION_TYPE_OPERATOR_MULTIPLY :
+      case EXPRESSION_TYPE_OPERATOR_DIVIDE:
+          GComparisonExpression tmpGCE(ab->getLeft(),ab->getRight(),enode[pos].et);
+          tmpGCE->setInBytes(ab->getInBytes());
+          tmpGCE->setValueSize(ab->getValueSize());
+          tmpGCE->setValueType(ab->getValueType());
+          memcpy(&data[enode[pos].startPos],&tmpGCE,sizeof(GComparisonExpression));
+          break;
+      case EXPRESSION_TYPE_OPERATOR_NOT:
+          break;
+      case EXPRESSION_TYPE_OPERATOR_IS_NULL:
+          break;
+      case EXPRESSION_TYPE_COMPARE_EQUAL:
+      case EXPRESSION_TYPE_COMPARE_NOTEQUAL:
+      case EXPRESSION_TYPE_COMPARE_LESSTHAN:
+      case EXPRESSION_TYPE_COMPARE_GREATERTHAN:
+      case EXPRESSION_TYPE_COMPARE_LESSTHANOREQUALTO:
+      case EXPRESSION_TYPE_COMPARE_GREATERTHANOREQUALTO:
+          break;
+      case EXPRESSION_TYPE_CONJUNCTION_AND:
+      case EXPRESSION_TYPE_CONJUNCTION_OR:
+          break;
+      case EXPRESSION_TYPE_VALUE_TUPLE:
+          GTupleValueExpression tmpGTVE(ab->getTupleId(),ab->getColumnId());
+          tmpGTVE->setInBytes(ab->getInBytes());
+          tmpGTVE->setValueSize(ab->getValueSize());
+          tmpGTVE->setValueType(ab->getValueType());
+          memcpy(&data[enode[pos].startPos],&tmpGTVE,sizeof(GTupleValueExpression));
+          break;
+      default:
+      }
+
+      //bother to include math.h
+      int nextdep = 1;
+      for(int i=0 ; i<dep; i++){
+          nextdep *= 2;
+      }
+      
+      int nextpos = (nextdep-1) + (pos+1-nextdep/2)*2 + 1;
+      
+      if(enode[pos].et == EXPRESSION_TYPE_VALUE_TYPE || ab == NULL){
+          this.maketree(NULL ,data ,nextpos ,dep+1);
+          this.maketree(NULL ,data ,nextpos+1 ,dep+1);
+      }else{
+          this.maketree(ab->getLeft() ,data ,nextpos ,dep+1);
+          this.maketree(ab->getRight() ,data ,nextpos+1 ,dep+1);
+      }
+      
+  }
+  
+
+  int getSize(){
+      return enode[15].endPos;
+  }
+
+  EXPRESSIONNODE getENode(int idx){
+    assert(idx < 16);
+    return enode[idx];
+  }
+
+
+private:
+
+
+  int expressionSize(ExpressionType et){
+
+    switch(et){
+    case EXPRESSION_TYPE_OPERATOR_PLUS:
+    case EXPRESSION_TYPE_OPERATOR_MINUS:
+    case EXPRESSION_TYPE_OPERATOR_MULTIPLY :
+    case EXPRESSION_TYPE_OPERATOR_DIVIDE:
+        return 0;
+        //return sizeof(OperatorExpression);
+    case EXPRESSION_TYPE_OPERATOR_NOT:
+        return 0;
+        //return sizeof(OperatorNOTExpression);
+    case EXPRESSION_TYPE_OPERATOR_IS_NULL:
+        return 0;
+        //return sizeof(OperatorIsNullExpression);
+    case EXPRESSION_TYPE_COMPARE_EQUAL:
+    case EXPRESSION_TYPE_COMPARE_NOTEQUAL:
+    case EXPRESSION_TYPE_COMPARE_LESSTHAN:
+    case EXPRESSION_TYPE_COMPARE_GREATERTHAN:
+    case EXPRESSION_TYPE_COMPARE_LESSTHANOREQUALTO:
+    case EXPRESSION_TYPE_COMPARE_GREATERTHANOREQUALTO:
+        return sizeof(ComparisonExpression);
+    case EXPRESSION_TYPE_CONJUNCTION_AND:
+    case EXPRESSION_TYPE_CONJUNCTION_OR:
+        return 0;
+        //return sizeof(ConjunctionExpression);
+    case EXPRESSION_TYPE_VALUE_TUPLE:
+      return sizeof(TupleValueExpression);
+    default:
+      return 0;     
+    }
+  }
+
+  
+  EXPRESSIONNODE enode[15];
+  
+
+};
+
+}
