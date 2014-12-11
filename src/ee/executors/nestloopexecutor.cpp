@@ -71,10 +71,10 @@
 #include "GPUetc/common/GNValue.h"
 #include "GPUetc/common/Gtabletuple.h"
 #include "GPUetc/common/GTupleSchema.h"
-#include "GPUetc/expressions/Gcomparisonexpression.h"
-#include "GPUetc/expressions/Gabstractexpression.h"
-#include "GPUetc/expressions/Gtuplevalueexpression.h"
 #include "GPUetc/expressions/makeexpressiontree.h"
+#include "GPUetc/expressions/Gabstractexpression.h"
+#include "GPUetc/expressions/Gcomparisonexpression.h"
+#include "GPUetc/expressions/Gtuplevalueexpression.h"
 #include "GPUetc/expressions/nodedata.h"
 
 #ifdef VOLT_DEBUG_ENABLED
@@ -86,6 +86,7 @@
 
 using namespace std;
 using namespace voltdb;
+
 
 bool NestLoopExecutor::p_init(AbstractPlanNode* abstract_node,
                               TempTableLimits* limits)
@@ -122,7 +123,7 @@ void setGNValue(COLUMNDATA *cd,NValue NV){
   cd->gn.setMdata(NV.getMdataForGPU());
   cd->gn.setSourceInlined(NV.getSourceInlinedForGPU());
   cd->gn.setValueType(NV.getValueTypeForGPU());
-  
+
 }
 
 void swap(RESULT *a,RESULT *b)
@@ -251,9 +252,13 @@ bool NestLoopExecutor::p_execute(const NValueArray &params) {
     int innerSize = (int)inner_table->activeTupleCount();
     printf("leftsize:%d\trightsize:%d\n",outerSize,innerSize);
 
+
     makeExpressionTree etree;
+
+    /*
     etree.maketree(joinPredicate,0,1);
     printf("tree size : %d\n",etree.getSize());
+
     char *edata = (char *)malloc(etree.getSize());
     etree.allocate(joinPredicate,edata,0,1);
 
@@ -261,6 +266,7 @@ bool NestLoopExecutor::p_execute(const NValueArray &params) {
     printf("enode data : %d %d %d %lu\n",static_cast<int>(enode.et),enode.startPos,enode.endPos,sizeof(AbstractExpression));
 
     free(edata);
+    */
 
 
     iterator0 = outer_table->iterator();
@@ -271,6 +277,7 @@ bool NestLoopExecutor::p_execute(const NValueArray &params) {
       TO DO : get all size of tabletuple included ColumnInfo etc.not outer_table->getTupleLength()
     */
 
+    //move outer tuple
     tmpouter_tuple = (TableTuple *)malloc(outerSize*sizeof(TableTuple));
     outer_GTT = (GTableTuple *)malloc(outerSize*sizeof(GTableTuple));
     outer_data = (char *)malloc(outerSize*outer_tuple.tupleLength());
@@ -280,6 +287,7 @@ bool NestLoopExecutor::p_execute(const NValueArray &params) {
       tmpouter_tuple[j] = outer_tuple; 
       j++;
     }
+
     GTupleSchema *Gouter_schema = NULL;
     int OschemaSize = static_cast<int>(sizeof(TupleSchema) + (outer_tuple.getSchema()->columnCount()+1)*sizeof(TupleSchema::ColumnInfo) + outer_tuple.getSchema()->getUninlinedObjectColumnCount()*sizeof(int16_t));
     Gouter_schema = (GTupleSchema *)malloc(OschemaSize);
@@ -288,6 +296,7 @@ bool NestLoopExecutor::p_execute(const NValueArray &params) {
         
 
     j=0;
+    //move inner tuple
     tmpinner_tuple = (TableTuple *)malloc(innerSize*sizeof(TableTuple));
     inner_GTT = (GTableTuple *)malloc(innerSize*sizeof(GTableTuple));
     inner_data = (char *)malloc(innerSize*inner_tuple.tupleLength());
@@ -303,6 +312,7 @@ bool NestLoopExecutor::p_execute(const NValueArray &params) {
     memcpy(Ginner_schema,inner_tuple.getSchema(),IschemaSize);
 
     printf("innertable size = %d\n",j);        
+
 
 
     bool gpuflag = true;

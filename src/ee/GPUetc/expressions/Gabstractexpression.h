@@ -47,7 +47,6 @@
 #define GABSTRACTEXPRESSION_H
 
 #include "common/types.h"
-#include "common/PlannerDomValue.h"
 #include "GPUetc/cudaheader.h"
 #include "GPUetc/expressions/nodedata.h"
 #include "GPUetc/common/GNValue.h"
@@ -62,23 +61,16 @@ namespace voltdb {
  * Predicate objects for filtering tuples during query execution.
  */
 
+
 // ------------------------------------------------------------------
-// AbstractExpression
-// Base class for all expression nodes
+// GAbstractExpression
+// Base class for all expression nodes in GPU
 // ------------------------------------------------------------------
+
 class GAbstractExpression {
   public:
-    /** destroy this node and all children */
-    CUDAH virtual ~GAbstractExpression();
 
     CUDAH virtual GNValue eval(const GTableTuple *tuple1 = NULL, const GTableTuple *tuple2 = NULL,const EXPRESSIONNODE *enode = NULL,const char *data = NULL) const = 0;
-/*
-    virtual NValue getLeftNV(const TableTuple *tuple1 = NULL, const TableTuple *tuple2 = NULL) const=0;
-    virtual NValue getRightNV(const TableTuple *tuple1 = NULL, const TableTuple *tuple2 = NULL) const=0;
-    virtual int getLeftTupleId();
-    virtual int getRightTupleId();
-    virtual int getTupleId();
-*/
 
     /** accessors */
     CUDAH ExpressionType getExpressionType() const {
@@ -118,13 +110,36 @@ class GAbstractExpression {
         m_valueSize = size;
     }
 
-  protected:
+
+protected:
+/*
     CUDAH GAbstractExpression();
     CUDAH GAbstractExpression(ExpressionType type);
     CUDAH GAbstractExpression(ExpressionType type,
                               int pos,int dep);
+*/
+    CUDAH GAbstractExpression()
+    : m_type(EXPRESSION_TYPE_INVALID),
+    m_hasParameter(true),m_pos(0),m_dep(0)
+    {
+    }
 
-  protected:
+    CUDAH GAbstractExpression(ExpressionType type)
+    : m_type(type),
+    m_hasParameter(true),m_pos(0),m_dep(0)
+    {
+    }
+
+    CUDAH GAbstractExpression(ExpressionType type,
+                                               int pos,
+                                               int dep
+    )
+    : m_type(type),
+    m_hasParameter(true),m_pos(pos),m_dep(dep)
+    {
+    }
+
+protected:
     ExpressionType m_type;
     bool m_hasParameter;
     ValueType m_valueType;
@@ -139,19 +154,26 @@ class GAbstractExpression {
 // ------------------------------------------------------------------
 // AbstractExpression
 // ------------------------------------------------------------------
-CUDAH GAbstractExpression::GAbstractExpression()
+
+/**
+If removing inline, fail to load .so file.
+
+*/
+
+/*
+inline CUDAH GAbstractExpression::GAbstractExpression()
     : m_type(EXPRESSION_TYPE_INVALID),
     m_hasParameter(true),m_pos(0),m_dep(0)
     {
     }
 
-CUDAH GAbstractExpression::GAbstractExpression(ExpressionType type)
+inline CUDAH GAbstractExpression::GAbstractExpression(ExpressionType type)
     : m_type(type),
     m_hasParameter(true),m_pos(0),m_dep(0)
     {
     }
 
-CUDAH GAbstractExpression::GAbstractExpression(ExpressionType type,
+inline CUDAH GAbstractExpression::GAbstractExpression(ExpressionType type,
                                                int pos,
                                                int dep
     )
@@ -159,7 +181,8 @@ CUDAH GAbstractExpression::GAbstractExpression(ExpressionType type,
     m_hasParameter(true),m_pos(pos),m_dep(dep)
     {
     }
-
+*/
 
 }
+
 #endif

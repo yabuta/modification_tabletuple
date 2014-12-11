@@ -13,7 +13,7 @@ GPUで動かすため配列のほうが向いていると思ったので
 #include "GPUTUPLE.h"
 #include "GPUetc/common/GNValue.h"
 
-using namespace voltdb;
+namespace voltdb{
 
 class GPUSHJ{
 
@@ -81,5 +81,6 @@ private:
 
 };
 
+}
 
 #endif

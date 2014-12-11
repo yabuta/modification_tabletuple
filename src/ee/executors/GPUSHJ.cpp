@@ -16,6 +16,7 @@
 #include "GPUTUPLE.h"
 #include "GPUetc/common/GNValue.h"
 
+using namespace voltdb;
 
 GPUSHJ::GPUSHJ(){
 

@@ -151,9 +151,8 @@ def buildMakefile(CTX):
                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                       close_fds=True)
     ComCap = p.stdout.readline()
-    if "no CUDA capable GPU is detected..." in ComCap:
+    if "A GPU which is capable of using CUDA is not detected..." in ComCap:
         return False
-
 
     GPUFLAGS = "-lcuda -lstdc++ -lcudart -L/usr/local/cuda/lib64 -I/usr/local/cuda/include -I/usr/local/cuda/include -I../../src/ee/executors/ -I../../src/ee/ -I/usr/local/cuda/samples/6_Advanced/ -I/usr/local/cuda/samples/common/inc"
     INCLUDE = "-isystem ../../third_party/cpp/ -lm"
@@ -240,7 +239,7 @@ def buildMakefile(CTX):
     makefile.write("# main jnilib target\n")
 #    makefile.write("nativelibs/libvoltdb-%s.$(JNIEXT): " % version + " ".join(jni_objects) + "\n")  # add part
     makefile.write("nativelibs/libvoltdb-%s.$(JNIEXT): " % version + " ".join(jni_objects) + " objects/executors/scan_main.co objects/executors/scan.co objects/executors/GPUNIJ.co objects/executors/GPUSHJ.co" + "\n")  # add part
-    makefile.write("\t$(LINK.cpp) $(JNILIBFLAGS) $(GPUFLAGS) -o $@ $^\n")
+    makefile.write("\t$(LINK.cpp) $(JNILIBFLAGS) $(GPUFLAGS) -o $@ $^\n") #add part
     makefile.write("\n")
 
     makefile.write("# voltdb instance that loads the jvm from C++\n")
@@ -274,7 +273,7 @@ def buildMakefile(CTX):
 
 #add part
     GPUPATH = "../../src/ee/executors/"
-    GPUINC = " ../../src/ee/executors/GPUNIJ.h ../../src/ee/executors/GPUSHJ.h ../../src/ee/executors/GPUTUPLE.h ../../src/ee/GPUetc/common/GNValue.h ../../src/ee/GPUetc/expressions/Gcomparisonexpression.h ../../src/ee/GPUetc/common/GTupleSchema.h ../../src/ee/GPUetc/common/Gtabletuple.h"
+    GPUINC = " ../../src/ee/executors/GPUNIJ.h ../../src/ee/executors/GPUSHJ.h ../../src/ee/executors/GPUTUPLE.h ../../src/ee/GPUetc/common/GNValue.h ../../src/ee/GPUetc/common/GTupleSchema.h ../../src/ee/GPUetc/common/Gtabletuple.h ../../src/ee/GPUetc/expressions/Gabstractexpression.h ../../src/ee/GPUetc/expressions/Gtuplevalueexpression.h ../../src/ee/GPUetc/expressions/Gcomparisonexpression.h ../../src/ee/GPUetc/expressions/makeexpressiontree.h ../../src/ee/GPUetc/expressions/nodedata.h"
     
 #scan.cu ,join_gpu.cu ,hjoin_gpu.cu ,partitioning.cu
     makefile.write("objects/executors/scan.co:../../src/ee/executors/scan.cu %s\n"%GPUINC)

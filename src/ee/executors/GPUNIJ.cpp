@@ -21,8 +21,6 @@
 using namespace voltdb;
 
 
-
-
 GPUNIJ::GPUNIJ(){
 
   jt = NULL;

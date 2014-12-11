@@ -77,7 +77,7 @@ public:
 
     GComparisonExpression();
 
-    CUDAH GComparisonExpression(ExpressionType e, int pos, int dep): GAbstractExpression(e,pos,dep), et(e)
+    CUDAH GComparisonExpression(ExpressionType e, int pos, int dep)  : GAbstractExpression(e,pos,dep), et(e)
     {
     };
 
