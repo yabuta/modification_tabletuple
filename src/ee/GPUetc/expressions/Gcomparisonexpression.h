@@ -65,116 +65,154 @@
 #include "GPUetc/expressions/Gtuplevalueexpression.h"
 
 
-#include <string>
-#include <iostream>
+//#include <string>
+//#include <iostream>
 #include <stdio.h>
 
 namespace voltdb {
-
-class GComparisonExpression : public GAbstractExpression{
-
-public:
-
-    GComparisonExpression();
-
-    CUDAH GComparisonExpression(ExpressionType e, int pos, int dep)  : GAbstractExpression(e,pos,dep), et(e)
-    {
-    };
-
-    CUDAH virtual GNValue eval(const GTableTuple *tuple1, const GTableTuple *tuple2, const EXPRESSIONNODE *enode,const char *data) const {
-
-        //bother to include math.h
-        int nextdep = 1;
-        for(int i=0 ; i<m_dep; i++){
-            nextdep *= 2;
-        }
-
-        int nextpos = (nextdep-1) + (m_pos+1-nextdep/2)*2 + 1;
-
-        GAbstractExpression *tmp = expressionGetter(&data[enode[nextpos].startPos]);
-        GNValue NV1 = tmp->eval(tuple1,tuple2,enode,data);
-        if(NV1.isNull()){
-            return GNValue::getNullValue(VALUE_TYPE_BOOLEAN);
-        }
-        tmp = expressionGetter(&data[enode[nextpos+1].startPos]);
-        GNValue NV2 = tmp->eval(tuple1,tuple2,enode,data);
-        if(NV2.isNull()){
-            return GNValue::getNullValue(VALUE_TYPE_BOOLEAN);
-        }
-
-        switch(et){
-        case (EXPRESSION_TYPE_COMPARE_EQUAL):
-            return NV1.op_equals_withoutNull(NV2);
-        case (EXPRESSION_TYPE_COMPARE_NOTEQUAL):
-            return NV1.op_notEquals_withoutNull(NV2);
-        case (EXPRESSION_TYPE_COMPARE_LESSTHAN):
-            return NV1.op_lessThan_withoutNull(NV2);
-        case (EXPRESSION_TYPE_COMPARE_GREATERTHAN):
-            return NV1.op_greaterThan_withoutNull(NV2);
-        case (EXPRESSION_TYPE_COMPARE_LESSTHANOREQUALTO):
-            return NV1.op_lessThanOrEqual_withoutNull(NV2);
-        case (EXPRESSION_TYPE_COMPARE_GREATERTHANOREQUALTO):
-            return NV1.op_greaterThanOrEqual_withoutNull(NV2);
-        case (EXPRESSION_TYPE_INVALID):
-            return GNValue::getTrue();
-        default:
-            return GNValue::getFalse();
-        }
-    }
     
-    CUDAH int getET(){
-        return et;
-    }
+    class GComparisonExpression : public GAbstractExpression{
+        
+    public:
 
+        CUDAH GComparisonExpression():
+        GAbstractExpression(),
+            l_position(0),r_position(0),
+            l_type(EXPRESSION_TYPE_INVALID),r_type(EXPRESSION_TYPE_INVALID)
+        {};
 
-private:
-
-    CUDAH GAbstractExpression *expressionGetter(const char *data) const {
-
-        switch(et){
-        case EXPRESSION_TYPE_OPERATOR_PLUS:
-        case EXPRESSION_TYPE_OPERATOR_MINUS:
-        case EXPRESSION_TYPE_OPERATOR_MULTIPLY :
-        case EXPRESSION_TYPE_OPERATOR_DIVIDE:
-            return NULL;
-            //return sizeof(OperatorExpression);
-        case EXPRESSION_TYPE_OPERATOR_NOT:
-            return NULL;
-            //return sizeof(OperatorNOTExpression);
-        case EXPRESSION_TYPE_OPERATOR_IS_NULL:
-            return NULL;
-            //return sizeof(OperatorIsNullExpression);
-        case EXPRESSION_TYPE_COMPARE_EQUAL:
-        case EXPRESSION_TYPE_COMPARE_NOTEQUAL:
-        case EXPRESSION_TYPE_COMPARE_LESSTHAN:
-        case EXPRESSION_TYPE_COMPARE_GREATERTHAN:
-        case EXPRESSION_TYPE_COMPARE_LESSTHANOREQUALTO:
-        case EXPRESSION_TYPE_COMPARE_GREATERTHANOREQUALTO:
+        CUDAH GComparisonExpression(ExpressionType e,int l_pos, int r_pos,ExpressionType l_et,ExpressionType r_et) :
+        GAbstractExpression(e),
+            l_position(l_pos),r_position(r_pos),l_type(l_et),r_type(r_et)
         {
-            GComparisonExpression *tmpGCE = NULL;
-            memcpy(tmpGCE,data,sizeof(GComparisonExpression));
-            return static_cast<GAbstractExpression*>(tmpGCE);
+        };
+
+        CUDAH GNValue eval(const GTableTuple *tuple1, const GTableTuple *tuple2, const char *data) const {
+
+            assert(tuple1 != NULL && tuple2 != NULL);
+            assert(data != NULL);
+
+            GNValue NV1,NV2;
+
+            switch(l_type){
+            case EXPRESSION_TYPE_OPERATOR_PLUS:
+            case EXPRESSION_TYPE_OPERATOR_MINUS:
+            case EXPRESSION_TYPE_OPERATOR_MULTIPLY :
+            case EXPRESSION_TYPE_OPERATOR_DIVIDE:
+                return GNValue::getFalse();
+            case EXPRESSION_TYPE_OPERATOR_NOT:
+                return GNValue::getFalse();
+            case EXPRESSION_TYPE_OPERATOR_IS_NULL:
+                return GNValue::getFalse();
+            case EXPRESSION_TYPE_COMPARE_EQUAL:
+            case EXPRESSION_TYPE_COMPARE_NOTEQUAL:
+            case EXPRESSION_TYPE_COMPARE_LESSTHAN:
+            case EXPRESSION_TYPE_COMPARE_GREATERTHAN:
+            case EXPRESSION_TYPE_COMPARE_LESSTHANOREQUALTO:
+            case EXPRESSION_TYPE_COMPARE_GREATERTHANOREQUALTO:
+            {
+                GComparisonExpression tmpGCE;
+                memcpy(&tmpGCE,&data[l_position],sizeof(GComparisonExpression));
+                NV1 = tmpGCE.eval(tuple1,tuple2,data);
+                break;
+            }
+            case EXPRESSION_TYPE_CONJUNCTION_AND:
+            case EXPRESSION_TYPE_CONJUNCTION_OR:
+                return GNValue::getFalse();
+                //return sizeof(ConjunctionExpression);
+            case EXPRESSION_TYPE_VALUE_TUPLE:
+            {
+                GTupleValueExpression tmpGTVE;
+                memcpy(&tmpGTVE,&data[l_position],sizeof(GTupleValueExpression));
+                NV1 = tmpGTVE.eval(tuple1,tuple2,data);
+                break;
+            }
+            default:
+                return GNValue::getFalse();
+            }
+
+
+            switch(r_type){
+            case EXPRESSION_TYPE_OPERATOR_PLUS:
+            case EXPRESSION_TYPE_OPERATOR_MINUS:
+            case EXPRESSION_TYPE_OPERATOR_MULTIPLY :
+            case EXPRESSION_TYPE_OPERATOR_DIVIDE:
+                return GNValue::getFalse();
+            case EXPRESSION_TYPE_OPERATOR_NOT:
+                return GNValue::getFalse();
+            case EXPRESSION_TYPE_OPERATOR_IS_NULL:
+                return GNValue::getFalse();
+            case EXPRESSION_TYPE_COMPARE_EQUAL:
+            case EXPRESSION_TYPE_COMPARE_NOTEQUAL:
+            case EXPRESSION_TYPE_COMPARE_LESSTHAN:
+            case EXPRESSION_TYPE_COMPARE_GREATERTHAN:
+            case EXPRESSION_TYPE_COMPARE_LESSTHANOREQUALTO:
+            case EXPRESSION_TYPE_COMPARE_GREATERTHANOREQUALTO:
+            {
+                GComparisonExpression tmpGCE;
+                memcpy(&tmpGCE,&data[r_position],sizeof(GComparisonExpression));
+                NV2 = tmpGCE.eval(tuple1,tuple2,data);
+                break;
+            }
+            case EXPRESSION_TYPE_CONJUNCTION_AND:
+            case EXPRESSION_TYPE_CONJUNCTION_OR:
+                return GNValue::getFalse();
+                //return sizeof(ConjunctionExpression);
+            case EXPRESSION_TYPE_VALUE_TUPLE:
+            {
+                GTupleValueExpression tmpGTVE;
+                memcpy(&tmpGTVE,&data[r_position],sizeof(GTupleValueExpression));
+                NV2 = tmpGTVE.eval(tuple1,tuple2,data);
+                break;
+            }
+            default:
+                return GNValue::getFalse();
+            }
+
+
+            if(NV1.isNull()){
+                return GNValue::getNullValue(VALUE_TYPE_BOOLEAN);
+            }
+            if(NV2.isNull()){
+                return GNValue::getNullValue(VALUE_TYPE_BOOLEAN);
+            }
+
+            
+            switch(m_type){
+            case (EXPRESSION_TYPE_COMPARE_EQUAL):
+                return NV1.op_equals_withoutNull(NV2);
+            case (EXPRESSION_TYPE_COMPARE_NOTEQUAL):
+                return NV1.op_notEquals_withoutNull(NV2);
+            case (EXPRESSION_TYPE_COMPARE_LESSTHAN):
+                return NV1.op_lessThan_withoutNull(NV2);
+            case (EXPRESSION_TYPE_COMPARE_GREATERTHAN):
+                return NV1.op_greaterThan_withoutNull(NV2);
+            case (EXPRESSION_TYPE_COMPARE_LESSTHANOREQUALTO):
+                return NV1.op_lessThanOrEqual_withoutNull(NV2);
+            case (EXPRESSION_TYPE_COMPARE_GREATERTHANOREQUALTO):
+                return NV1.op_greaterThanOrEqual_withoutNull(NV2);
+            case (EXPRESSION_TYPE_INVALID):
+                return GNValue::getTrue();
+            default:
+                return GNValue::getFalse();
+            }
+
         }
-        case EXPRESSION_TYPE_CONJUNCTION_AND:
-        case EXPRESSION_TYPE_CONJUNCTION_OR:
-            return NULL;
-            //return sizeof(ConjunctionExpression);
-        case EXPRESSION_TYPE_VALUE_TUPLE:
-        {
-            GTupleValueExpression *tmpGTVE = NULL;
-            memcpy(tmpGTVE,data,sizeof(GTupleValueExpression));
-            return static_cast<GAbstractExpression*>(tmpGTVE);
+    
+        CUDAH int getET(){
+            return m_type;
         }
-        default:
-            return NULL;
-        }
-    }
 
 
-    ExpressionType et;
+    private:
+
+        int l_position;
+        int r_position;
+        ExpressionType l_type;
+        ExpressionType r_type;
 
 
-};
+    };
 
 }
 #endif

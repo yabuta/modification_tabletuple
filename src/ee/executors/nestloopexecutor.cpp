@@ -73,8 +73,6 @@
 #include "GPUetc/common/GTupleSchema.h"
 #include "GPUetc/expressions/makeexpressiontree.h"
 #include "GPUetc/expressions/Gabstractexpression.h"
-#include "GPUetc/expressions/Gcomparisonexpression.h"
-#include "GPUetc/expressions/Gtuplevalueexpression.h"
 #include "GPUetc/expressions/nodedata.h"
 
 #ifdef VOLT_DEBUG_ENABLED
@@ -82,6 +80,17 @@
 #include <sys/times.h>
 #include <unistd.h>
 #endif
+
+
+namespace voltdb{
+
+
+class Test{
+public:
+  Test(){};
+
+};
+}
 
 
 using namespace std;
@@ -244,9 +253,8 @@ bool NestLoopExecutor::p_execute(const NValueArray &params) {
       printf("where\n");
     }
 
-    GTableTuple *outer_GTT=NULL,*inner_GTT=NULL;
+    char *outer_GTT=NULL,*inner_GTT=NULL;
     TableTuple *tmpouter_tuple=NULL,*tmpinner_tuple=NULL;
-    char *outer_data,*inner_data;
 
     int outerSize = (int)outer_table->activeTupleCount();
     int innerSize = (int)inner_table->activeTupleCount();
@@ -255,63 +263,85 @@ bool NestLoopExecutor::p_execute(const NValueArray &params) {
 
     makeExpressionTree etree;
 
-    /*
     etree.maketree(joinPredicate,0,1);
+    etree.setSize();
     printf("tree size : %d\n",etree.getSize());
 
-    char *edata = (char *)malloc(etree.getSize());
+    char *edata = (char *)calloc(1,etree.getSize());
     etree.allocate(joinPredicate,edata,0,1);
 
-    EXPRESSIONNODE enode = etree.getENode(0);
-    printf("enode data : %d %d %d %lu\n",static_cast<int>(enode.et),enode.startPos,enode.endPos,sizeof(AbstractExpression));
+    EXPRESSIONNODE enode = etree.getENode(1);
+    printf("enode data : %d %d %d %lu\n",static_cast<int>(enode.et),enode.startPos,enode.endPos,sizeof(GAbstractExpression));
+    enode = etree.getENode(2);
+    printf("enode data : %d %d %d %lu\n",static_cast<int>(enode.et),enode.startPos,enode.endPos,sizeof(GAbstractExpression));
 
-    free(edata);
+    /*
+    if(reinterpret_cast<GComparisonExpression*>(edata)->eval(NULL,NULL,NULL).isTrue()){
+      printf("true\n");
+    }else{
+      printf("false\n");
+    }
     */
-
 
     iterator0 = outer_table->iterator();
     iterator1 = inner_table->iterator();
     int j=0;
 
     /*
+      all data must be transported to GPU.
+     */
+
+    /*
+      TO DO : I must sratch a better implementation.
       TO DO : get all size of tabletuple included ColumnInfo etc.not outer_table->getTupleLength()
     */
 
     //move outer tuple
+    GTupleSchema *GouterSchema = NULL;
+    int OschemaSize = static_cast<int>(sizeof(TupleSchema) + (outer_tuple.getSchema()->columnCount()+1)*sizeof(TupleSchema::ColumnInfo) + outer_tuple.getSchema()->getUninlinedObjectColumnCount()*sizeof(int16_t));
+    GouterSchema = (GTupleSchema *)malloc(OschemaSize);
+    memcpy(GouterSchema,outer_tuple.getSchema(),OschemaSize);
+    printf("schema column count:%d %d %lu\n",outer_tuple.getSchema()->columnCount(),GouterSchema->columnCount(),sizeof(TupleSchema::ColumnInfo));
+
     tmpouter_tuple = (TableTuple *)malloc(outerSize*sizeof(TableTuple));
-    outer_GTT = (GTableTuple *)malloc(outerSize*sizeof(GTableTuple));
-    outer_data = (char *)malloc(outerSize*outer_tuple.tupleLength());
+    int outerTupleSize = static_cast<int>(sizeof(GTableTuple)+outer_tuple.tupleLength()-1);
+    outer_GTT = (char *)malloc(outerSize*outerTupleSize);
     while(iterator0.next(outer_tuple)){
-      outer_GTT[j].setRowNumber(j);
-      memcpy(&outer_data[outer_table->getTupleLength()*j],outer_tuple.address(),outer_tuple.tupleLength());
+      if(!outer_tuple.isActive()) continue;
+      reinterpret_cast<GTableTuple*>(outer_GTT+j*outerTupleSize)->setRowNumber(j);
+      //reinterpret_cast<GTableTuple*>(outer_GTT+j*outerTupleSize)->setSchemaSize(OschemaSize);
+      //reinterpret_cast<GTableTuple*>(outer_GTT+j*outerTupleSize)->setSchema(Gouter_schema,OschemaSize);
+      //copy except TUPLE HEADER
+      reinterpret_cast<GTableTuple*>(outer_GTT+j*outerTupleSize)->setTuple(outer_tuple.address(),outer_tuple.tupleLength());
       tmpouter_tuple[j] = outer_tuple; 
       j++;
     }
 
-    GTupleSchema *Gouter_schema = NULL;
-    int OschemaSize = static_cast<int>(sizeof(TupleSchema) + (outer_tuple.getSchema()->columnCount()+1)*sizeof(TupleSchema::ColumnInfo) + outer_tuple.getSchema()->getUninlinedObjectColumnCount()*sizeof(int16_t));
-    Gouter_schema = (GTupleSchema *)malloc(OschemaSize);
-    memcpy(Gouter_schema,outer_tuple.getSchema(),OschemaSize);
-    printf("outertable size = %d\n",j);
-        
+    printf("outertable row num = %d %d\n",j,outerTupleSize);
+    outerSize = j;
 
     j=0;
-    //move inner tuple
+    GTupleSchema *GinnerSchema = NULL;
+    int IschemaSize = static_cast<int>(sizeof(TupleSchema) + (inner_tuple.getSchema()->columnCount()+1)*sizeof(TupleSchema::ColumnInfo) + inner_tuple.getSchema()->getUninlinedObjectColumnCount()*sizeof(int16_t));
+    GinnerSchema = (GTupleSchema *)malloc(IschemaSize);
+    memcpy(GinnerSchema,inner_tuple.getSchema(),IschemaSize);
+    
     tmpinner_tuple = (TableTuple *)malloc(innerSize*sizeof(TableTuple));
-    inner_GTT = (GTableTuple *)malloc(innerSize*sizeof(GTableTuple));
-    inner_data = (char *)malloc(innerSize*inner_tuple.tupleLength());
+    int innerTupleSize = static_cast<int>(sizeof(GTableTuple)+inner_tuple.tupleLength()-1);
+    inner_GTT = (char *)malloc(innerSize*innerTupleSize);
     while(iterator1.next(inner_tuple)){
-      inner_GTT[j].setRowNumber(j);
-      memcpy(&inner_data[inner_table->getTupleLength()*j],inner_tuple.address(),inner_tuple.tupleLength());
-      tmpinner_tuple[j] = inner_tuple;
+      if(!inner_tuple.isActive()) continue;
+      reinterpret_cast<GTableTuple*>(inner_GTT+j*innerTupleSize)->setRowNumber(j);
+      //reinterpret_cast<GTableTuple*>(inner_GTT+j*innerTupleSize)->setSchemaSize(IschemaSize);
+      //reinterpret_cast<GTableTuple*>(inner_GTT+j*innerTupleSize)->setSchema(Ginner_schema,IschemaSize);
+      //copy except TUPLE HEADER
+      reinterpret_cast<GTableTuple*>(inner_GTT+j*innerTupleSize)->setTuple(inner_tuple.address(),inner_tuple.tupleLength());
+      tmpinner_tuple[j] = inner_tuple; 
       j++;
     }
-    GTupleSchema *Ginner_schema = NULL;
-    int IschemaSize = static_cast<int>(sizeof(TupleSchema) + (inner_tuple.getSchema()->columnCount()+1)*sizeof(TupleSchema::ColumnInfo) + inner_tuple.getSchema()->getUninlinedObjectColumnCount()*sizeof(int16_t));
-    Ginner_schema = (GTupleSchema *)malloc(IschemaSize);
-    memcpy(Ginner_schema,inner_tuple.getSchema(),IschemaSize);
 
     printf("innertable size = %d\n",j);        
+    innerSize = j;
 
 
 
@@ -320,13 +350,15 @@ bool NestLoopExecutor::p_execute(const NValueArray &params) {
     //GPUNIJ *gn = new GPUNIJ();
 
     GPUNIJ *gn = new GPUNIJ();
-
+    
     gpuflag = gpuflag && gn->initGPU();
 
     if(gpuflag){
 
       /*set table data: table size , GNValue ,expression*/
-      gn->setTableData(outer_GTT,inner_GTT,outer_data,inner_data,Gouter_schema,Ginner_schema,outerSize,innerSize);
+      gn->setTableData(outer_GTT,inner_GTT,outerSize,innerSize,outerTupleSize,innerTupleSize);
+      gn->setSchema(GouterSchema,GinnerSchema,OschemaSize,IschemaSize);
+      gn->setExpression(edata,etree.getSize());    
 
       RESULT *jt = NULL;
       int jt_size = 0;
@@ -336,7 +368,8 @@ bool NestLoopExecutor::p_execute(const NValueArray &params) {
         matched left table and right table rows.             
         result table size 
       */
-      if(gn->join()){              
+
+      if(gn->join()){
         jt = gn->getResult();
         jt_size = gn->getResultSize();
       }else{
@@ -374,10 +407,12 @@ bool NestLoopExecutor::p_execute(const NValueArray &params) {
     delete gn;
     free(tmpouter_tuple);
     free(tmpinner_tuple);
-    free(outer_data);
-    free(inner_data);
-    free(Ginner_schema);
-    free(Gouter_schema);
+    free(outer_GTT);
+    free(inner_GTT);
+    free(GinnerSchema);
+    free(GouterSchema);
+    free(edata);
+
 
     /*
     bool earlyReturned = false;

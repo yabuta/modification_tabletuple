@@ -70,7 +70,8 @@ namespace voltdb {
 class GAbstractExpression {
   public:
 
-    CUDAH virtual GNValue eval(const GTableTuple *tuple1 = NULL, const GTableTuple *tuple2 = NULL,const EXPRESSIONNODE *enode = NULL,const char *data = NULL) const = 0;
+    //An address of virtual finction is odd when transporting data from CPU to GPU.
+    //virtual CUDAH GNValue eval(const GTableTuple *tuple1 = NULL, const GTableTuple *tuple2 = NULL,const char *data = NULL) const = 0;
 
     /** accessors */
     CUDAH ExpressionType getExpressionType() const {
@@ -120,24 +121,16 @@ protected:
 */
     CUDAH GAbstractExpression()
     : m_type(EXPRESSION_TYPE_INVALID),
-    m_hasParameter(true),m_pos(0),m_dep(0)
+    m_hasParameter(true)
     {
     }
 
     CUDAH GAbstractExpression(ExpressionType type)
     : m_type(type),
-    m_hasParameter(true),m_pos(0),m_dep(0)
+    m_hasParameter(true)
     {
     }
 
-    CUDAH GAbstractExpression(ExpressionType type,
-                                               int pos,
-                                               int dep
-    )
-    : m_type(type),
-    m_hasParameter(true),m_pos(pos),m_dep(dep)
-    {
-    }
 
 protected:
     ExpressionType m_type;
@@ -145,8 +138,6 @@ protected:
     ValueType m_valueType;
     int m_valueSize;
     bool m_inBytes;
-    int m_pos;
-    int m_dep;
 
 };
 

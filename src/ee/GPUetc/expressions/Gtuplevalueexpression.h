@@ -51,32 +51,38 @@
 #include "GPUetc/common/Gtabletuple.h"
 #include "GPUetc/common/GNValue.h"
 
-#include <string>
-#include <sstream>
+//#include <string>
+//#include <sstream>
+#include <stdio.h>
 
 namespace voltdb {
 
 class GTupleValueExpression : public GAbstractExpression {
   public:
-        CUDAH GTupleValueExpression(const int tableIdx, const int valueIdx,int pos,int dep)
-            : GAbstractExpression(EXPRESSION_TYPE_VALUE_TUPLE,pos,dep), tuple_idx(tableIdx), value_idx(valueIdx)
-    {
-    };
 
-        CUDAH virtual GNValue eval(const GTableTuple *tuple1, const GTableTuple *tuple2,const EXPRESSIONNODE *enode,const char *data) const {
+        CUDAH GTupleValueExpression():
+        GAbstractExpression(EXPRESSION_TYPE_VALUE_TUPLE),
+            tuple_idx(0),value_idx(0)
+        {};
+
+        CUDAH GTupleValueExpression(const int tableIdx, const int valueIdx)
+            : GAbstractExpression(EXPRESSION_TYPE_VALUE_TUPLE), tuple_idx(tableIdx), value_idx(valueIdx)
+        {};
+
+        CUDAH GNValue eval(const GTableTuple *tuple1, const GTableTuple *tuple2,const char *data) const {
 
         if (tuple_idx == 0) {
             assert(tuple1);
             if ( ! tuple1 ) {
 
             }
-            return tuple1->getGNValue(value_idx,NULL,NULL);
+            return tuple1->getGNValue(value_idx);
         }
         else {
             assert(tuple2);
             if ( ! tuple2 ) {
             }
-            return tuple2->getGNValue(value_idx,NULL,NULL);
+            return tuple2->getGNValue(value_idx);
         }
     }
 

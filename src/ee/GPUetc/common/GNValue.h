@@ -89,7 +89,7 @@ class GNValue {
     /* Check if the value represents SQL NULL */
     CUDAH bool isNull() const;
 
-    void setNull();
+    CUDAH void setNull();
 
     CUDAH bool getSourceInlined() const;
 
@@ -657,7 +657,7 @@ inline CUDAH GNValue::GNValue() {
 /**
  * Set this NValue to null.
  */
-inline void GNValue::setNull() {
+inline CUDAH void GNValue::setNull() {
     tagAsNull(); // This gets overwritten for DECIMAL -- but that's OK.
     switch (getValueType())
     {

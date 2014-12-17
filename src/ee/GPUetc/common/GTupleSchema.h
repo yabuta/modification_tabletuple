@@ -24,6 +24,7 @@
 #include <string>
 
 #include "common/types.h"
+#include "common/value_defs.h"
 
 #include "GPUetc/common/GNValue.h"
 #include "GPUetc/common/Gtabletuple.h"
@@ -71,8 +72,8 @@ private:
 
     // can't (shouldn't) call constructors or destructor
     // prevents TupleSchema from being created on the stack
-    CUDAH GTupleSchema() {}
-    CUDAH ~GTupleSchema() {}
+    CUDAH GTupleSchema() {};
+    CUDAH ~GTupleSchema() {};
 
     // number of columns
     uint16_t m_columnCount;

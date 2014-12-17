@@ -49,6 +49,7 @@
 
 //#include "common/common.h"
 //#include "common/TupleSchema.h"
+#include "common/value_defs.h"
 #include "GPUetc/cudaheader.h"
 #include "GPUetc/common/GNValue.h"
 #include "GPUetc/common/GTupleSchema.h"
@@ -57,11 +58,11 @@
 //#include "common/FatalException.hpp"
 //#include "common/ExportSerializeIo.h"
 
+#include <stdio.h>
 #include <cassert>
 
 namespace voltdb {
 
-#define TUPLE_HEADER_SIZE 1
 
 class GTableTuple {
 
@@ -73,41 +74,76 @@ public:
     /** Get the value of a specified column (const) */
     //not performant because it has to check the schema to see how to
     //return the SlimValue.
-    inline CUDAH const GNValue getGNValue(const int idx,const GTupleSchema *schema,const char *start) const {
-        assert(schema);
-        assert(start);
-        assert(idx < schema->columnCount());
+    inline CUDAH const GNValue getGNValue(const int idx) const {
+        assert(idx < getSchema()->columnCount());
 
-        const GTupleSchema::ColumnInfo *columnInfo = schema->getColumnInfo(idx);
+//        printf("%d\n",getSchema()->tupleLength());
+
+        const GTupleSchema::ColumnInfo *columnInfo = getSchema()->getColumnInfo(idx);
         const voltdb::ValueType columnType = columnInfo->getVoltType();
-        const char* dataPtr = getDataPtr(columnInfo,schema,start);
+        const char* dataPtr = getDataPtr(columnInfo);
         const bool isInlined = columnInfo->inlined;
-
         return GNValue::initFromTupleStorage(dataPtr, columnType, isInlined);
     }
 
     /** How long is a tuple? */
-    inline CUDAH int tupleLength(const GTupleSchema *schema) const {
-        return schema->tupleLength() + TUPLE_HEADER_SIZE;
+    CUDAH int tupleLength() const {
+        return getSchema()->tupleLength();
     }
 
     CUDAH void setRowNumber(int rn){
         rownumber = rn;
     }
 
-private:
+/*
+    CUDAH void setSchemaSize(int ss){
+        schemaSize = ss;
+    }
+*/
 
-    inline CUDAH const char* getDataPtr(const GTupleSchema::ColumnInfo * colInfo, const GTupleSchema *schema,const char *start) const {
-        assert(schema);
-        assert(start);
-        return &start[TUPLE_HEADER_SIZE + colInfo->offset + (rownumber-1)*tupleLength(schema)];
+/*
+    __host__ void setSchema(GTupleSchema *gts,int size){
+        assert(gts);
+        assert(size == schemaSize);
+        memcpy(m_data,gts,size);
+    }
+*/
+
+    CUDAH void setSchema(GTupleSchema *gts){
+        assert(gts);
+        schema = gts;
     }
 
+    __host__ void setTuple(char *data,int size){
+        assert(data);
+        //remove original tuple header
+        memcpy(m_data,data+1,size-1);
+    }
+
+    CUDAH const GTupleSchema *getSchema() const {
+        return schema;
+    }
+
+
+private:
+
+    inline CUDAH const char* getDataPtr(const GTupleSchema::ColumnInfo * colInfo) const {
+        const char *res = getDataAddress();
+        return &res[colInfo->offset];
+    }
+
+    CUDAH const char *getDataAddress() const {
+        return m_data;
+    }
 
     /**
      *the row number of this tuple.
      */
     int rownumber;
+    //int schemaSize;
+    GTupleSchema *schema;
+
+    char m_data[0];
 
 };
 

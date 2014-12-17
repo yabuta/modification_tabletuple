@@ -7,10 +7,11 @@
 
 namespace voltdb{
 
-//1blockでのスレッド数の定義。
-#define BLOCK_SIZE_X 256  //outer ,left
-#define BLOCK_SIZE_Y 128  //inner ,right
+//configuration for non-index join
+#define BLOCK_SIZE_X 512  //outer ,left
+//#define BLOCK_SIZE_Y 256  //inner ,right
 
+//configuration for single hash join
 #define PARTITION 64
 #define RADIX 6
 #define PART_C_NUM 16
@@ -22,11 +23,7 @@ namespace voltdb{
 #define JOIN_SHARED 256
 
 
-typedef struct _TUPLE {
-    int key;
-    int val;
-} TUPLE;
-
+//structure when transporting data to GPU.
 typedef struct _RESULT {
     int lkey;
     int rkey;
