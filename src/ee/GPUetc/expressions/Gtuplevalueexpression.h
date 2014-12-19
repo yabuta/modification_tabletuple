@@ -69,20 +69,26 @@ class GTupleValueExpression : public GAbstractExpression {
             : GAbstractExpression(EXPRESSION_TYPE_VALUE_TUPLE), tuple_idx(tableIdx), value_idx(valueIdx)
         {};
 
-        CUDAH GNValue eval(const GTableTuple *tuple1, const GTableTuple *tuple2,const char *data) const {
+        CUDAH GNValue eval(const GTableTuple *tuple1,
+                           const GTableTuple *tuple2,
+                           const char *data,
+                           const GTupleSchema *Oschema,
+                           const GTupleSchema *Ischema) const {
 
         if (tuple_idx == 0) {
-            assert(tuple1);
+            //assert(tuple1);
             if ( ! tuple1 ) {
 
             }
-            return tuple1->getGNValue(value_idx);
+            //return GNValue::getFalse();
+            return tuple1->getGNValue(value_idx,Oschema);
         }
         else {
-            assert(tuple2);
+            //assert(tuple2);
             if ( ! tuple2 ) {
             }
-            return tuple2->getGNValue(value_idx);
+//            return GNValue::getTrue();
+            return tuple2->getGNValue(value_idx,Ischema);
         }
     }
 

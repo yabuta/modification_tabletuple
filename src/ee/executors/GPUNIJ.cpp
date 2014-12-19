@@ -254,7 +254,8 @@ bool GPUNIJ::join()
     for(uint rr = 0; rr < right ; rr += PART){
 
 
-      gettimeofday(count_s,NULL);
+      gettimeofday(&count_s,NULL);
+
       uint lls=PART,rrs=PART;
       if((ll+PART) >= left){
         lls = left - ll;
@@ -345,7 +346,7 @@ bool GPUNIJ::join()
         return false;
       }
 
-      gettimeofday(count_f,NULL);
+      gettimeofday(&count_f,NULL);
 
       /************************************************************************
       jt memory alloc and jt upload
@@ -354,7 +355,7 @@ bool GPUNIJ::join()
 
       printf("jt_size %d\n",jt_size);
 
-      gettimeofday(join_s,NULL);
+      gettimeofday(&join_s,NULL);
 
       if(jt_size <0){
         return false;
@@ -432,7 +433,7 @@ bool GPUNIJ::join()
         printf("End...\n jt_size = %d\ttotal = %d\n",jt_size,total);
         jt_size = 0;
 
-        gettimeofday(join_f,NULL);
+        gettimeofday(&join_f,NULL);
       
         
       }

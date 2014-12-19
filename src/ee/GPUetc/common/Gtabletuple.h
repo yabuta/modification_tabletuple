@@ -68,31 +68,39 @@ class GTableTuple {
 
 public:
     /** Initialize a tuple unassociated with a table (bad idea... dangerous) */
-    CUDAH GTableTuple(){};
+    CUDAH GTableTuple():rownumber(0)
+    {};
     CUDAH ~GTableTuple(){};
 
     /** Get the value of a specified column (const) */
     //not performant because it has to check the schema to see how to
     //return the SlimValue.
-    inline CUDAH const GNValue getGNValue(const int idx) const {
-        assert(idx < getSchema()->columnCount());
+    inline CUDAH const GNValue getGNValue(const int idx,const GTupleSchema *schema) const {
+        //assert(idx < schema->columnCount());
 
 //        printf("%d\n",getSchema()->tupleLength());
-
-        const GTupleSchema::ColumnInfo *columnInfo = getSchema()->getColumnInfo(idx);
+/*
+        const GTupleSchema::ColumnInfo *columnInfo = schema->getColumnInfo(idx);
         const voltdb::ValueType columnType = columnInfo->getVoltType();
         const char* dataPtr = getDataPtr(columnInfo);
         const bool isInlined = columnInfo->inlined;
         return GNValue::initFromTupleStorage(dataPtr, columnType, isInlined);
+*/
+        return GNValue::getFalse();
     }
 
     /** How long is a tuple? */
+/*
     CUDAH int tupleLength() const {
         return getSchema()->tupleLength();
     }
-
+*/
     CUDAH void setRowNumber(int rn){
         rownumber = rn;
+    }
+
+    CUDAH int getRowNumber(){
+        return rownumber;
     }
 
 /*
@@ -109,21 +117,23 @@ public:
     }
 */
 
+/*
     CUDAH void setSchema(GTupleSchema *gts){
         assert(gts);
         schema = gts;
     }
-
+*/
     __host__ void setTuple(char *data,int size){
         assert(data);
         //remove original tuple header
         memcpy(m_data,data+1,size-1);
     }
 
+/*
     CUDAH const GTupleSchema *getSchema() const {
         return schema;
     }
-
+*/
 
 private:
 
@@ -141,7 +151,7 @@ private:
      */
     int rownumber;
     //int schemaSize;
-    GTupleSchema *schema;
+    //GTupleSchema *schema;
 
     char m_data[0];
 

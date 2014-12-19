@@ -87,7 +87,11 @@ namespace voltdb {
         {
         };
 
-        CUDAH GNValue eval(const GTableTuple *tuple1, const GTableTuple *tuple2, const char *data) const {
+        CUDAH GNValue eval(const GTableTuple *tuple1,
+                           const GTableTuple *tuple2,
+                           const char *data,
+                           const GTupleSchema *Oschema,
+                           const GTupleSchema *Ischema) const {
 
             assert(tuple1 != NULL && tuple2 != NULL);
             assert(data != NULL);
@@ -113,7 +117,7 @@ namespace voltdb {
             {
                 GComparisonExpression tmpGCE;
                 memcpy(&tmpGCE,&data[l_position],sizeof(GComparisonExpression));
-                NV1 = tmpGCE.eval(tuple1,tuple2,data);
+                NV1 = tmpGCE.eval(tuple1,tuple2,data,Oschema,Ischema);
                 break;
             }
             case EXPRESSION_TYPE_CONJUNCTION_AND:
@@ -124,7 +128,8 @@ namespace voltdb {
             {
                 GTupleValueExpression tmpGTVE;
                 memcpy(&tmpGTVE,&data[l_position],sizeof(GTupleValueExpression));
-                NV1 = tmpGTVE.eval(tuple1,tuple2,data);
+                //NV1 = GNValue::getFalse();
+                NV1 = tmpGTVE.eval(tuple1,tuple2,data,Oschema,Ischema);
                 break;
             }
             default:
@@ -151,7 +156,7 @@ namespace voltdb {
             {
                 GComparisonExpression tmpGCE;
                 memcpy(&tmpGCE,&data[r_position],sizeof(GComparisonExpression));
-                NV2 = tmpGCE.eval(tuple1,tuple2,data);
+                NV2 = tmpGCE.eval(tuple1,tuple2,data,Oschema,Ischema);
                 break;
             }
             case EXPRESSION_TYPE_CONJUNCTION_AND:
@@ -162,7 +167,8 @@ namespace voltdb {
             {
                 GTupleValueExpression tmpGTVE;
                 memcpy(&tmpGTVE,&data[r_position],sizeof(GTupleValueExpression));
-                NV2 = tmpGTVE.eval(tuple1,tuple2,data);
+                //NV2 = GNValue::getTrue();
+                NV2 = tmpGTVE.eval(tuple1,tuple2,data,Oschema,Ischema);
                 break;
             }
             default:
@@ -176,7 +182,6 @@ namespace voltdb {
             if(NV2.isNull()){
                 return GNValue::getNullValue(VALUE_TYPE_BOOLEAN);
             }
-
             
             switch(m_type){
             case (EXPRESSION_TYPE_COMPARE_EQUAL):
@@ -196,7 +201,6 @@ namespace voltdb {
             default:
                 return GNValue::getFalse();
             }
-
         }
     
         CUDAH int getET(){
