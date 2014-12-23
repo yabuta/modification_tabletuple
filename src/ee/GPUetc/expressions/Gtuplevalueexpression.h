@@ -69,28 +69,29 @@ class GTupleValueExpression : public GAbstractExpression {
             : GAbstractExpression(EXPRESSION_TYPE_VALUE_TUPLE), tuple_idx(tableIdx), value_idx(valueIdx)
         {};
 
-        CUDAH GNValue eval(const GTableTuple *tuple1,
-                           const GTableTuple *tuple2,
-                           const char *data,
-                           const GTupleSchema *Oschema,
-                           const GTupleSchema *Ischema) const {
-
-        if (tuple_idx == 0) {
-            //assert(tuple1);
-            if ( ! tuple1 ) {
-
-            }
-            //return GNValue::getFalse();
-            return tuple1->getGNValue(value_idx,Oschema);
-        }
-        else {
-            //assert(tuple2);
-            if ( ! tuple2 ) {
-            }
+        CUDAH void eval(const GTableTuple *tuple1,
+                        const GTableTuple *tuple2,
+                        const char *data,
+                        const GTupleSchema *Oschema,
+                        const GTupleSchema *Ischema,
+                        GNValue *gnv) const {
+            
+                if (tuple_idx == 0) {
+                    //assert(tuple1);
+                    if ( ! tuple1 ) {
+                        //return GNValue::getFalse();
+                    }
+                    //return GNValue::getFalse();
+                    tuple1->getGNValue(value_idx,Oschema,gnv);
+                }
+                else {
+                    //assert(tuple2);
+                    if ( ! tuple2 ) {
+                    }
 //            return GNValue::getTrue();
-            return tuple2->getGNValue(value_idx,Ischema);
+                    tuple2->getGNValue(value_idx,Ischema,gnv);
+                }
         }
-    }
 
     int getColumnId() const {return this->value_idx;}
     inline int getTupleId() {return this->tuple_idx;} //add for GPU join

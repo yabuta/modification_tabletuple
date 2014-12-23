@@ -87,11 +87,11 @@ namespace voltdb {
         {
         };
 
-        CUDAH GNValue eval(const GTableTuple *tuple1,
-                           const GTableTuple *tuple2,
-                           const char *data,
-                           const GTupleSchema *Oschema,
-                           const GTupleSchema *Ischema) const {
+        CUDAH bool eval(const GTableTuple *tuple1,
+                        const GTableTuple *tuple2,
+                        const char *data,
+                        const GTupleSchema *Oschema,
+                        const GTupleSchema *Ischema) const {
 
             assert(tuple1 != NULL && tuple2 != NULL);
             assert(data != NULL);
@@ -103,11 +103,11 @@ namespace voltdb {
             case EXPRESSION_TYPE_OPERATOR_MINUS:
             case EXPRESSION_TYPE_OPERATOR_MULTIPLY :
             case EXPRESSION_TYPE_OPERATOR_DIVIDE:
-                return GNValue::getFalse();
+                return false;
             case EXPRESSION_TYPE_OPERATOR_NOT:
-                return GNValue::getFalse();
+                return false;
             case EXPRESSION_TYPE_OPERATOR_IS_NULL:
-                return GNValue::getFalse();
+                return false;
             case EXPRESSION_TYPE_COMPARE_EQUAL:
             case EXPRESSION_TYPE_COMPARE_NOTEQUAL:
             case EXPRESSION_TYPE_COMPARE_LESSTHAN:
@@ -115,38 +115,41 @@ namespace voltdb {
             case EXPRESSION_TYPE_COMPARE_LESSTHANOREQUALTO:
             case EXPRESSION_TYPE_COMPARE_GREATERTHANOREQUALTO:
             {
+/*
                 GComparisonExpression tmpGCE;
                 memcpy(&tmpGCE,&data[l_position],sizeof(GComparisonExpression));
                 NV1 = tmpGCE.eval(tuple1,tuple2,data,Oschema,Ischema);
                 break;
+*/
+                return false;
             }
             case EXPRESSION_TYPE_CONJUNCTION_AND:
             case EXPRESSION_TYPE_CONJUNCTION_OR:
-                return GNValue::getFalse();
+                return false;
                 //return sizeof(ConjunctionExpression);
             case EXPRESSION_TYPE_VALUE_TUPLE:
             {
-                GTupleValueExpression tmpGTVE;
-                memcpy(&tmpGTVE,&data[l_position],sizeof(GTupleValueExpression));
+                const GTupleValueExpression *tmpLGTVE;
+                tmpLGTVE = reinterpret_cast<const GTupleValueExpression*>(&data[l_position]);
+                //memcpy(&tmpGTVE,&data[l_position],sizeof(GTupleValueExpression));
                 //NV1 = GNValue::getFalse();
-                NV1 = tmpGTVE.eval(tuple1,tuple2,data,Oschema,Ischema);
+                tmpLGTVE->eval(tuple1,tuple2,data,Oschema,Ischema,&NV1);
                 break;
             }
             default:
-                return GNValue::getFalse();
+                return false;
             }
-
 
             switch(r_type){
             case EXPRESSION_TYPE_OPERATOR_PLUS:
             case EXPRESSION_TYPE_OPERATOR_MINUS:
             case EXPRESSION_TYPE_OPERATOR_MULTIPLY :
             case EXPRESSION_TYPE_OPERATOR_DIVIDE:
-                return GNValue::getFalse();
+                return false;
             case EXPRESSION_TYPE_OPERATOR_NOT:
-                return GNValue::getFalse();
+                return false;
             case EXPRESSION_TYPE_OPERATOR_IS_NULL:
-                return GNValue::getFalse();
+                return false;
             case EXPRESSION_TYPE_COMPARE_EQUAL:
             case EXPRESSION_TYPE_COMPARE_NOTEQUAL:
             case EXPRESSION_TYPE_COMPARE_LESSTHAN:
@@ -154,35 +157,38 @@ namespace voltdb {
             case EXPRESSION_TYPE_COMPARE_LESSTHANOREQUALTO:
             case EXPRESSION_TYPE_COMPARE_GREATERTHANOREQUALTO:
             {
+/*
                 GComparisonExpression tmpGCE;
                 memcpy(&tmpGCE,&data[r_position],sizeof(GComparisonExpression));
                 NV2 = tmpGCE.eval(tuple1,tuple2,data,Oschema,Ischema);
                 break;
+*/
+                return false;
             }
             case EXPRESSION_TYPE_CONJUNCTION_AND:
             case EXPRESSION_TYPE_CONJUNCTION_OR:
-                return GNValue::getFalse();
+                return false;
                 //return sizeof(ConjunctionExpression);
             case EXPRESSION_TYPE_VALUE_TUPLE:
             {
-                GTupleValueExpression tmpGTVE;
-                memcpy(&tmpGTVE,&data[r_position],sizeof(GTupleValueExpression));
+                const GTupleValueExpression *tmpRGTVE;
+                tmpRGTVE = reinterpret_cast<const GTupleValueExpression*>(&data[r_position]);
+                //memcpy(&tmpGTVE,&data[r_position],sizeof(GTupleValueExpression));
                 //NV2 = GNValue::getTrue();
-                NV2 = tmpGTVE.eval(tuple1,tuple2,data,Oschema,Ischema);
+                tmpRGTVE->eval(tuple1,tuple2,data,Oschema,Ischema,&NV2);
                 break;
             }
             default:
-                return GNValue::getFalse();
+                return false;
             }
-
-
+                            
             if(NV1.isNull()){
-                return GNValue::getNullValue(VALUE_TYPE_BOOLEAN);
+                return false;
             }
             if(NV2.isNull()){
-                return GNValue::getNullValue(VALUE_TYPE_BOOLEAN);
+                return false;
             }
-            
+
             switch(m_type){
             case (EXPRESSION_TYPE_COMPARE_EQUAL):
                 return NV1.op_equals_withoutNull(NV2);
@@ -197,10 +203,11 @@ namespace voltdb {
             case (EXPRESSION_TYPE_COMPARE_GREATERTHANOREQUALTO):
                 return NV1.op_greaterThanOrEqual_withoutNull(NV2);
             case (EXPRESSION_TYPE_INVALID):
-                return GNValue::getTrue();
+                return true;
             default:
-                return GNValue::getFalse();
+                return false;
             }
+
         }
     
         CUDAH int getET(){
@@ -209,6 +216,47 @@ namespace voltdb {
 
 
     private:
+
+/*
+        bool getNValue(GNValue *gnv,ExpressionType type,int position){
+
+            switch(type){
+            case EXPRESSION_TYPE_OPERATOR_PLUS:
+            case EXPRESSION_TYPE_OPERATOR_MINUS:
+            case EXPRESSION_TYPE_OPERATOR_MULTIPLY :
+            case EXPRESSION_TYPE_OPERATOR_DIVIDE:
+                return false;
+            case EXPRESSION_TYPE_OPERATOR_NOT:
+                return false;
+            case EXPRESSION_TYPE_OPERATOR_IS_NULL:
+                return false;
+            case EXPRESSION_TYPE_COMPARE_EQUAL:
+            case EXPRESSION_TYPE_COMPARE_NOTEQUAL:
+            case EXPRESSION_TYPE_COMPARE_LESSTHAN:
+            case EXPRESSION_TYPE_COMPARE_GREATERTHAN:
+            case EXPRESSION_TYPE_COMPARE_LESSTHANOREQUALTO:
+            case EXPRESSION_TYPE_COMPARE_GREATERTHANOREQUALTO:
+            {
+            }
+            case EXPRESSION_TYPE_CONJUNCTION_AND:
+            case EXPRESSION_TYPE_CONJUNCTION_OR:
+                return false;
+                //return sizeof(ConjunctionExpression);
+            case EXPRESSION_TYPE_VALUE_TUPLE:
+            {
+                const GTupleValueExpression *tmpLGTVE;
+                tmpLGTVE = reinterpret_cast<const GTupleValueExpression*>(&data[position]);
+                //memcpy(&tmpGTVE,&data[l_position],sizeof(GTupleValueExpression));
+                //NV1 = GNValue::getFalse();
+                tmpLGTVE->eval(tuple1,tuple2,data,Oschema,Ischema,gnv);
+                return true;
+            }
+            default:
+                return false;
+            }
+
+        }
+*/
 
         int l_position;
         int r_position;

@@ -75,18 +75,15 @@ public:
     /** Get the value of a specified column (const) */
     //not performant because it has to check the schema to see how to
     //return the SlimValue.
-    inline CUDAH const GNValue getGNValue(const int idx,const GTupleSchema *schema) const {
+    CUDAH const void getGNValue(const int idx,const GTupleSchema *schema,GNValue *gnv) const {
         //assert(idx < schema->columnCount());
 
-//        printf("%d\n",getSchema()->tupleLength());
-/*
         const GTupleSchema::ColumnInfo *columnInfo = schema->getColumnInfo(idx);
         const voltdb::ValueType columnType = columnInfo->getVoltType();
         const char* dataPtr = getDataPtr(columnInfo);
         const bool isInlined = columnInfo->inlined;
-        return GNValue::initFromTupleStorage(dataPtr, columnType, isInlined);
-*/
-        return GNValue::getFalse();
+        GNValue::initFromTupleStorage(dataPtr, columnType, isInlined,gnv);
+        //return GNValue::getTrue();
     }
 
     /** How long is a tuple? */

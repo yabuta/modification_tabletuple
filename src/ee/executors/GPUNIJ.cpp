@@ -154,7 +154,7 @@ bool GPUNIJ::join()
 
 
   //The number of tuple which is executed in 1 thread. 
-  block_size_y = ((SHARED_SIZE/4)-exSize)/innerTupleSize;
+  block_size_y = ((SHARED_SIZE/4)-outerSchemaSize-innerSchemaSize)/innerTupleSize;
   double temp = block_size_y;
   if(temp < 2){
     block_size_y = 1;
@@ -305,8 +305,7 @@ bool GPUNIJ::join()
         (void *)&innerSchemaSize,
         (void *)&lls,
         (void *)&rrs,
-        (void *)&block_size_y,
-        (void *)&exSize
+        (void *)&block_size_y
       };
       
       res = cuLaunchKernel(
@@ -317,7 +316,9 @@ bool GPUNIJ::join()
                            block_x,       // blockDimX
                            block_y,       // blockDimY
                            1,             // blockDimZ
-                           innerTupleSize * block_size_y + outerSchemaSize + innerSchemaSize,
+                           innerTupleSize * block_size_y 
+                           + outerSchemaSize 
+                           + innerSchemaSize,
                            // sharedMemBytes
                            NULL,          // hStream
                            count_args,   // kernelParams
@@ -393,8 +394,7 @@ bool GPUNIJ::join()
           (void *)&rrs,    
           (void *)&ll,
           (void *)&rr,
-          (void *)&block_size_y,
-          (void *)&exSize
+          (void *)&block_size_y
         };
 
         res = cuLaunchKernel(
@@ -405,7 +405,9 @@ bool GPUNIJ::join()
                              block_x,       // blockDimX
                              block_y,       // blockDimY
                              1,             // blockDimZ
-                             innerTupleSize * block_size_y + outerSchemaSize + innerSchemaSize,
+                             innerTupleSize * block_size_y 
+                             + outerSchemaSize
+                             + innerSchemaSize,
                              // sharedMemBytes
                              NULL,          // hStream
                              kernel_args,   // keunelParams
