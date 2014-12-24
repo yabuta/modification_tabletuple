@@ -71,24 +71,22 @@ class GTupleValueExpression : public GAbstractExpression {
 
         CUDAH void eval(const GTableTuple *tuple1,
                         const GTableTuple *tuple2,
-                        const char *data,
                         const GTupleSchema *Oschema,
                         const GTupleSchema *Ischema,
                         GNValue *gnv) const {
             
                 if (tuple_idx == 0) {
-                    //assert(tuple1);
-                    if ( ! tuple1 ) {
-                        //return GNValue::getFalse();
+                    if ( !tuple1 ) {                   
+                        GNValue::getNullValueByPointer(gnv);
+                        return;
                     }
-                    //return GNValue::getFalse();
                     tuple1->getGNValue(value_idx,Oschema,gnv);
-                }
-                else {
-                    //assert(tuple2);
-                    if ( ! tuple2 ) {
+
+                } else {
+                    if ( !tuple2 ) {
+                        GNValue::getNullValueByPointer(gnv);
+                        return;
                     }
-//            return GNValue::getTrue();
                     tuple2->getGNValue(value_idx,Ischema,gnv);
                 }
         }

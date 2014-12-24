@@ -136,7 +136,7 @@ public:
         // We need to re-enable after we can verify that all plans in all configs give the
         // same answer.]
         if (lnv.isNull() || lnv.isNaN() || rnv.isNull() || rnv.isNaN()) {
-            return NValue::getFalse();
+          return NValue::getFalse();
         }
 
         return compare.cmp(lnv, rnv);

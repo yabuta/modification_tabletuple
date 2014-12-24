@@ -93,7 +93,7 @@ namespace voltdb {
                         const GTupleSchema *Oschema,
                         const GTupleSchema *Ischema) const {
 
-            assert(tuple1 != NULL && tuple2 != NULL);
+            //assert(tuple1 != NULL && tuple2 != NULL);
             assert(data != NULL);
 
             GNValue NV1,NV2;
@@ -133,7 +133,7 @@ namespace voltdb {
                 tmpLGTVE = reinterpret_cast<const GTupleValueExpression*>(&data[l_position]);
                 //memcpy(&tmpGTVE,&data[l_position],sizeof(GTupleValueExpression));
                 //NV1 = GNValue::getFalse();
-                tmpLGTVE->eval(tuple1,tuple2,data,Oschema,Ischema,&NV1);
+                tmpLGTVE->eval(tuple1,tuple2,Oschema,Ischema,&NV1);
                 break;
             }
             default:
@@ -175,7 +175,7 @@ namespace voltdb {
                 tmpRGTVE = reinterpret_cast<const GTupleValueExpression*>(&data[r_position]);
                 //memcpy(&tmpGTVE,&data[r_position],sizeof(GTupleValueExpression));
                 //NV2 = GNValue::getTrue();
-                tmpRGTVE->eval(tuple1,tuple2,data,Oschema,Ischema,&NV2);
+                tmpRGTVE->eval(tuple1,tuple2,Oschema,Ischema,&NV2);
                 break;
             }
             default:
@@ -191,17 +191,17 @@ namespace voltdb {
 
             switch(m_type){
             case (EXPRESSION_TYPE_COMPARE_EQUAL):
-                return NV1.op_equals_withoutNull(NV2);
+                return NV1.op_equals_withoutNull(&NV2);
             case (EXPRESSION_TYPE_COMPARE_NOTEQUAL):
-                return NV1.op_notEquals_withoutNull(NV2);
+                return NV1.op_notEquals_withoutNull(&NV2);
             case (EXPRESSION_TYPE_COMPARE_LESSTHAN):
-                return NV1.op_lessThan_withoutNull(NV2);
+                return NV1.op_lessThan_withoutNull(&NV2);
             case (EXPRESSION_TYPE_COMPARE_GREATERTHAN):
-                return NV1.op_greaterThan_withoutNull(NV2);
+                return NV1.op_greaterThan_withoutNull(&NV2);
             case (EXPRESSION_TYPE_COMPARE_LESSTHANOREQUALTO):
-                return NV1.op_lessThanOrEqual_withoutNull(NV2);
+                return NV1.op_lessThanOrEqual_withoutNull(&NV2);
             case (EXPRESSION_TYPE_COMPARE_GREATERTHANOREQUALTO):
-                return NV1.op_greaterThanOrEqual_withoutNull(NV2);
+                return NV1.op_greaterThanOrEqual_withoutNull(&NV2);
             case (EXPRESSION_TYPE_INVALID):
                 return true;
             default:

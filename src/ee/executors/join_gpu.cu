@@ -59,37 +59,25 @@ void count(
     memcpy(tis,is,issize);
   }
 
-  if(x<ltn){
-    /*
-    char *toGTT = (char *)malloc(ots);
-    memcpy(toGTT,oGTT+x*ots,ots);
-    */    
-    //reinterpret_cast<GTableTuple*>(toGTT)->setSchema(tos);
+  __syncthreads();
 
+
+  if(x<ltn){
     int rtn_g = rtn;
     int mcount = 0;
     for(uint y = 0; y<block_size_y && block_size_y*blockIdx.y+y<rtn_g;y++){
-      /*
-      if(reinterpret_cast<GComparisonExpression*>(ex)->eval(reinterpret_cast<GTableTuple*>(toGTT),
-                                                            reinterpret_cast<GTableTuple*>(tiGTT+y*its),
-                                                            ex,
-                                                            tos,
-                                                            tis)) {
-      */
-        //if(reinterpret_cast<GComparisonExpression*>(ex)->eval(reinterpret_cast<GTableTuple*>(toGTT),reinterpret_cast<GTableTuple*>(tiGTT+y*its),ex).isTrue()) {
-      if(reinterpret_cast<GComparisonExpression*>(ex)->eval(reinterpret_cast<GTableTuple*>(oGTT+x*ots),
-                                                            reinterpret_cast<GTableTuple*>(tiGTT+y*its),
-                                                            ex,
-                                                            tos,
-                                                            tis)) {
-
+      if(reinterpret_cast<GComparisonExpression*>(ex)
+         ->eval(reinterpret_cast<GTableTuple*>(oGTT+x*ots),
+                reinterpret_cast<GTableTuple*>(tiGTT+y*its),
+                ex,
+                tos,
+                tis)) {
         mcount++;
       }
 
     }
 
     count[x+k] = mcount;
-    //free(toGTT);
   }
 
   if(x+k == (blockDim.x*gridDim.x*gridDim.y-1)){
@@ -138,27 +126,24 @@ __global__ void join(
     memcpy(tis,is,issize);
   }
 
+  __syncthreads();
+
   if(x<ltn){
-    /*
-    char *toGTT = (char *)malloc(ots);
-    memcpy(toGTT,oGTT+x*ots,ots);
-    */
     int rtn_g = rtn;
     uint writeloc = count[x+k];
     for(uint y = 0; y<block_size_y && block_size_y*blockIdx.y+y<rtn_g;y++){
-      if(reinterpret_cast<GComparisonExpression*>(ex)->eval(reinterpret_cast<GTableTuple*>(oGTT+x*ots),
-                                                            reinterpret_cast<GTableTuple*>(tiGTT+y*its),
-                                                            ex,
-                                                            tos,
-                                                            tis)) {
+      if(reinterpret_cast<GComparisonExpression*>(ex)
+         ->eval(reinterpret_cast<GTableTuple*>(oGTT+x*ots),
+                reinterpret_cast<GTableTuple*>(tiGTT+y*its),
+                ex,
+                tos,
+                tis)) {
         p[writeloc].lkey = reinterpret_cast<GTableTuple*>(oGTT+x*ots)->getRowNumber();
         p[writeloc].rkey = reinterpret_cast<GTableTuple*>(tiGTT+y*its)->getRowNumber();
         writeloc++;
       }
 
     }
-
-    //free(toGTT);
   }
 
 }

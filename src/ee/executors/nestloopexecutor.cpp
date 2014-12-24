@@ -384,6 +384,8 @@ bool NestLoopExecutor::p_execute(const NValueArray &params) {
         if (jt_size < offset) {
           continue;
         }
+
+
             
         join_tuple.setNValues(0, tmpouter_tuple[jt[i].lkey], 0, outer_cols);
         join_tuple.setNValues(outer_cols, tmpinner_tuple[jt[i].rkey], 0, inner_cols);

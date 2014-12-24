@@ -8,7 +8,7 @@
 namespace voltdb{
 
 //configuration for non-index join
-#define BLOCK_SIZE_X 384  //outer ,left
+#define BLOCK_SIZE_X 512  //outer ,left
 //#define BLOCK_SIZE_Y 256  //inner ,right
 
 //configuration for single hash join

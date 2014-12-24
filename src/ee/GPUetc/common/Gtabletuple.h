@@ -81,9 +81,7 @@ public:
         const GTupleSchema::ColumnInfo *columnInfo = schema->getColumnInfo(idx);
         const voltdb::ValueType columnType = columnInfo->getVoltType();
         const char* dataPtr = getDataPtr(columnInfo);
-//        const bool isInlined = columnInfo->inlined;
         GNValue::initFromTupleStorage(dataPtr, columnType, gnv);
-        //return GNValue::getTrue();
     }
 
     CUDAH void setRowNumber(int rn){

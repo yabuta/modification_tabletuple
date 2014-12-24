@@ -36,7 +36,6 @@ void count(
     int idx = tlgnv.getHashValue( 0 , p_num);
     int temp2 = r_p[idx+1];
 
-
     for(int k=r_p[idx] ; k<temp2 ; k++){
       /*
       if(ex.eval(tlgnv,prt[k].gn)){
