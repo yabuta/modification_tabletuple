@@ -219,7 +219,7 @@ class GNValue {
         return -1;//TODO: maybe -1 is worse value.
     }
 
-    CUDAH static void initFromTupleStorage(const void *storage, ValueType type, bool isInlined, GNValue *retval);
+    CUDAH static void initFromTupleStorage(const void *storage, ValueType type, GNValue *retval);
 
     CUDAH void setMdata(const char *input){
         memcpy(m_data,input,16);
@@ -703,7 +703,7 @@ inline CUDAH void GNValue::setNull() {
  * storage area provided. If this is an Object type then the third
  * argument indicates whether the object is stored in the tuple inline.
  */
-inline CUDAH void GNValue::initFromTupleStorage(const void *storage, ValueType type, bool isInlined,GNValue *retval)
+inline CUDAH void GNValue::initFromTupleStorage(const void *storage, ValueType type,GNValue *retval)
 {
 
     assert(type != VALUE_TYPE_VARCHAR && type != VALUE_TYPE_VARBINARY && type != VALUE_TYPE_DECIMAL);

@@ -47,10 +47,10 @@ bool GPUNIJ::initGPU(){
     return false;
   }
 
-  /******************** GPU init here ************************************************/
-  //GPU仕様のために
+  /******************** GPU init************************************************/
+  //If GPU is not initailized, GPU is initialized here.
+  //In this case,The initialization has about two seconds.
 
-  /*
   res = cuInit(0);
   if (res != CUDA_SUCCESS) {
     printf("cuInit failed: res = %lu\n", (unsigned long)res);
@@ -66,7 +66,6 @@ bool GPUNIJ::initGPU(){
     printf("cuCtxCreate failed: res = %lu\n", (unsigned long)res);
     return false;
   }
-  */
 
   /*********************************************************************************/
 
@@ -154,7 +153,7 @@ bool GPUNIJ::join()
 
 
   //The number of tuple which is executed in 1 thread. 
-  block_size_y = ((SHARED_SIZE/4)-outerSchemaSize-innerSchemaSize)/innerTupleSize;
+  block_size_y = ((SHARED_SIZE/2)-outerSchemaSize-innerSchemaSize)/innerTupleSize;
   double temp = block_size_y;
   if(temp < 2){
     block_size_y = 1;

@@ -60,9 +60,10 @@ void count(
   }
 
   if(x<ltn){
+    /*
     char *toGTT = (char *)malloc(ots);
     memcpy(toGTT,oGTT+x*ots,ots);
-    
+    */    
     //reinterpret_cast<GTableTuple*>(toGTT)->setSchema(tos);
 
     int rtn_g = rtn;
@@ -76,7 +77,7 @@ void count(
                                                             tis)) {
       */
         //if(reinterpret_cast<GComparisonExpression*>(ex)->eval(reinterpret_cast<GTableTuple*>(toGTT),reinterpret_cast<GTableTuple*>(tiGTT+y*its),ex).isTrue()) {
-      if(reinterpret_cast<GComparisonExpression*>(ex)->eval(reinterpret_cast<GTableTuple*>(toGTT),
+      if(reinterpret_cast<GComparisonExpression*>(ex)->eval(reinterpret_cast<GTableTuple*>(oGTT+x*ots),
                                                             reinterpret_cast<GTableTuple*>(tiGTT+y*its),
                                                             ex,
                                                             tos,
@@ -88,7 +89,7 @@ void count(
     }
 
     count[x+k] = mcount;
-    free(toGTT);
+    //free(toGTT);
   }
 
   if(x+k == (blockDim.x*gridDim.x*gridDim.y-1)){
@@ -125,7 +126,6 @@ __global__ void join(
   //speedup by storing to shared memory
   extern __shared__ char total[];
   char *tiGTT = total;
-  //char *toGTT = &total[its*block_size_y];
   GTupleSchema *tos = reinterpret_cast<GTupleSchema*>(&total[its*block_size_y]);
   GTupleSchema *tis = reinterpret_cast<GTupleSchema*>(&total[its*block_size_y+ossize]);
 
@@ -139,67 +139,27 @@ __global__ void join(
   }
 
   if(x<ltn){
+    /*
     char *toGTT = (char *)malloc(ots);
     memcpy(toGTT,oGTT+x*ots,ots);
-    
-    int writeloc = count[x+k];
+    */
     int rtn_g = rtn;
+    uint writeloc = count[x+k];
     for(uint y = 0; y<block_size_y && block_size_y*blockIdx.y+y<rtn_g;y++){
-      if(reinterpret_cast<GComparisonExpression*>(ex)->eval(reinterpret_cast<GTableTuple*>(toGTT),
+      if(reinterpret_cast<GComparisonExpression*>(ex)->eval(reinterpret_cast<GTableTuple*>(oGTT+x*ots),
                                                             reinterpret_cast<GTableTuple*>(tiGTT+y*its),
                                                             ex,
                                                             tos,
                                                             tis)) {
-        p[writeloc].lkey = x + ll;
-        p[writeloc].rkey = block_size_y*blockIdx.y + y + rr;
+        p[writeloc].lkey = reinterpret_cast<GTableTuple*>(oGTT+x*ots)->getRowNumber();
+        p[writeloc].rkey = reinterpret_cast<GTableTuple*>(tiGTT+y*its)->getRowNumber();
         writeloc++;
       }
 
     }
 
-    free(toGTT);
+    //free(toGTT);
   }
-
-  /*
-  extern __shared__ char total[];
-  char *tiGTT = total;
-  GTupleSchema *tos = reinterpret_cast<GTupleSchema*>(&total[its*block_size_y]);
-  GTupleSchema *tis = reinterpret_cast<GTupleSchema*>(&total[its*block_size_y+ossize]);
-
-  for(int i = threadIdx.x; i<block_size_y && block_size_y*blockIdx.y+i<rtn ; i+=blockDim.x){
-    memcpy(&tiGTT[i*its],iGTT + (block_size_y*blockIdx.y+i)*its,its);
-  }
-
-  if(threadIdx.x==0){
-    memcpy(tos,os,ossize);
-    memcpy(tis,is,issize);
-  }
-
-  if(x<ltn){
-
-    //speedup step by storing to register
-
-    char *toGTT = (char *)malloc(ots);
-    memcpy(toGTT,oGTT+x*ots,ots);
-
-    reinterpret_cast<GTableTuple*>(toGTT)->setSchema(tos);
-
-    int rtn_g = rtn;
-    int writeloc = count[x+k];
-
-    for(uint y = 0; y<block_size_y && block_size_y*blockIdx.y+y<rtn_g;y++){
-      reinterpret_cast<GTableTuple*>(tiGTT+y*its)->setSchema(tis);
-      if(reinterpret_cast<GComparisonExpression*>(ex)->eval(reinterpret_cast<GTableTuple*>(toGTT),reinterpret_cast<GTableTuple*>(tiGTT+y*its),ex).isTrue()) {
-        //if(tex->eval(reinterpret_cast<GTableTuple*>(toGTT),reinterpret_cast<GTableTuple*>(tiGTT+y*its),ex).isTrue()) {
-        p[writeloc].lkey = x;
-        p[writeloc].rkey = block_size_y*blockIdx.y + y;
-        writeloc++;
-      } 
-    }
-
-    free(toGTT);
-  }
-  */
 
 }
 
