@@ -93,8 +93,7 @@ public:
     }
 
     __host__ void setTuple(char *data,int size){
-        assert(data);
-        //remove original tuple header
+        assert(data);        //remove original tuple header
         memcpy(m_data,data+1,size-1);
     }
 

@@ -71,6 +71,8 @@ public:
     }
 
     inline void setSchema(GTupleSchema *os,GTupleSchema *is,int ossize,int issize){
+        assert(ossize >= 0 && issize >= 0);
+        assert(os != NULL && is != NULL);
         outerSchema = os;
         innerSchema = is;
         outerSchemaSize = ossize;
@@ -78,6 +80,7 @@ public:
     }
 
     inline void setExpression(char *edata,int size){
+        assert(size >= 0);
         expression = edata;
         exSize = size;
     }

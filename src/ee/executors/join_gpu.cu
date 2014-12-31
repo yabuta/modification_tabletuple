@@ -66,7 +66,7 @@ void count(
     int rtn_g = rtn;
     int mcount = 0;
     for(uint y = 0; y<block_size_y && block_size_y*blockIdx.y+y<rtn_g;y++){
-      if(reinterpret_cast<GComparisonExpression*>(ex)
+      if(ex == NULL || reinterpret_cast<GComparisonExpression*>(ex)
          ->eval(reinterpret_cast<GTableTuple*>(oGTT+x*ots),
                 reinterpret_cast<GTableTuple*>(tiGTT+y*its),
                 ex,
@@ -132,7 +132,7 @@ __global__ void join(
     int rtn_g = rtn;
     uint writeloc = count[x+k];
     for(uint y = 0; y<block_size_y && block_size_y*blockIdx.y+y<rtn_g;y++){
-      if(reinterpret_cast<GComparisonExpression*>(ex)
+      if(ex == NULL || reinterpret_cast<GComparisonExpression*>(ex)
          ->eval(reinterpret_cast<GTableTuple*>(oGTT+x*ots),
                 reinterpret_cast<GTableTuple*>(tiGTT+y*its),
                 ex,

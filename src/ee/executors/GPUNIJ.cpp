@@ -229,17 +229,20 @@ bool GPUNIJ::join()
 
 
   //expression data
-  res = cuMemAlloc(&expression_dev, exSize);
-  if (res != CUDA_SUCCESS) {
-    printf("cuMemAlloc (expression) failed\n");
-    return false;
+  if(exSize == 0){
+    expression_dev = NULL;
+  }else{
+    res = cuMemAlloc(&expression_dev, exSize);
+    if (res != CUDA_SUCCESS) {
+      printf("cuMemAlloc (expression) failed\n");
+      return false;
+    }
+    res = cuMemcpyHtoD(expression_dev, expression, exSize);
+    if (res != CUDA_SUCCESS) {
+      printf("cuMemcpyHtoD (expression) failed: res = %lu\n", res);//conv(res));
+      return false;
+    }
   }
-  res = cuMemcpyHtoD(expression_dev, expression, exSize);
-  if (res != CUDA_SUCCESS) {
-    printf("cuMemcpyHtoD (expression) failed: res = %lu\n", res);//conv(res));
-    return false;
-  }
-
 
   res = cuMemAlloc(&count_dev, gpu_size * sizeof(ulong));
   if (res != CUDA_SUCCESS) {
@@ -280,12 +283,12 @@ bool GPUNIJ::join()
       printf("gpu_size = %d\n",gpu_size);
 
 
-      res = cuMemcpyHtoD(lt_dev, &(outer_GTT[ll]), lls * outerTupleSize);
+      res = cuMemcpyHtoD(lt_dev, outer_GTT + ll*outerTupleSize, lls * outerTupleSize);
       if (res != CUDA_SUCCESS) {
         printf("cuMemcpyHtoD (lt) failed: res = %lu\n", res);//conv(res));
         return false;
       }
-      res = cuMemcpyHtoD(rt_dev, &(inner_GTT[rr]), rrs * innerTupleSize);
+      res = cuMemcpyHtoD(rt_dev, inner_GTT + rr*innerTupleSize, rrs * innerTupleSize);
       if (res != CUDA_SUCCESS) {
         printf("cuMemcpyHtoD (rt) failed: res = %lu\n", (unsigned long)res);
         return false;
@@ -402,7 +405,7 @@ bool GPUNIJ::join()
                              grid_y,        // gridDimY
                              1,             // gridDimZ
                              block_x,       // blockDimX
-                             block_y,       // blockDimY
+                             1,       // blockDimY
                              1,             // blockDimZ
                              innerTupleSize * block_size_y 
                              + outerSchemaSize
